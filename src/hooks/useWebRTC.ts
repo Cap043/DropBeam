@@ -340,9 +340,9 @@ export function useWebRTC(
     // SIGNALING SERVER
     // ----------------------------------------------------------
 
-    socketRef.current = io(
-      `http://${window.location.hostname}:3001`
-    );
+socketRef.current = io(
+  window.location.origin
+);
 
     const socket =
       socketRef.current;

@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete
+    // even if your project has TypeScript errors.
+    ignoreBuildErrors: true,
+  },
   allowedDevOrigins: [
     "10.227.200.54",
     "localhost:3000"

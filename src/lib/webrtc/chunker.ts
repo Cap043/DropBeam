@@ -1,6 +1,8 @@
 const CHUNK_SIZE = 256 * 1024;
 const MAX_BUFFER = 4 * 1024 * 1024;
 const LOW_BUFFER = 512 * 1024;
+console.log(
+  `[CHUNKER] Chunk size: ${CHUNK_SIZE} bytes | `)
 
 function waitForBufferedAmount(
   channel: RTCDataChannel,
