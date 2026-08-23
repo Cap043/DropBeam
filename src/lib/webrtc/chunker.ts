@@ -1,57 +1,343 @@
+const CHUNK_SIZE = 256 * 1024;
+const MAX_BUFFER = 4 * 1024 * 1024;
+const LOW_BUFFER = 512 * 1024;
+
+function waitForBufferedAmount(
+  channel: RTCDataChannel,
+  target: number
+): Promise<void> {
+  if (
+    channel.bufferedAmount <= target
+  ) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve) => {
+    let finished = false;
+
+    let timer:
+      ReturnType<typeof setInterval> |
+      null = null;
+
+    const cleanup = () => {
+      if (finished) return;
+
+      finished = true;
+
+      channel.removeEventListener(
+        "bufferedamountlow",
+        onLow
+      );
+
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+
+      resolve();
+    };
+
+    const onLow = () => {
+      if (
+        channel.bufferedAmount <= target
+      ) {
+        cleanup();
+      }
+    };
+
+    channel.addEventListener(
+      "bufferedamountlow",
+      onLow
+    );
+
+    timer = setInterval(() => {
+      if (
+        channel.readyState !==
+          "open" ||
+        channel.bufferedAmount <=
+          target
+      ) {
+        cleanup();
+      }
+    }, 10);
+
+    onLow();
+  });
+}
+
 export async function sendFileChunks(
   channel: RTCDataChannel,
   file: File,
   onProgress: (percent: number) => void,
   isCancelled: () => boolean
 ) {
-  const CHUNK_SIZE = 256 * 1024; 
-  const MAX_BUFFER = 4 * 1024 * 1024; 
+  if (
+    channel.readyState !==
+    "open"
+  ) {
+    throw new Error(
+      "DataChannel is not open."
+    );
+  }
 
-  channel.bufferedAmountLowThreshold = CHUNK_SIZE;
+  channel.bufferedAmountLowThreshold =
+    LOW_BUFFER;
+
   let offset = 0;
-  let lastReportedPercent = -1; // 🌟 ADDED: Track the last percent reported
-  const startTime = performance.now();
+  let lastReportedPercent = -1;
+  let lastLoggedPercent = -1;
 
-  console.log(`[SENDER] 🚀 Starting transfer: "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
+  const startTime =
+    performance.now();
 
-  while (offset < file.size) {
+  console.log(
+    `[SENDER] 🚀 Starting transfer: "${file.name}" ` +
+      `(${(
+        file.size /
+        1024 /
+        1024
+      ).toFixed(2)} MB)`
+  );
+
+  while (
+    offset < file.size
+  ) {
+    // ----------------------------------------------------------
+    // CANCEL
+    // ----------------------------------------------------------
+
     if (isCancelled()) {
-      console.warn(`[SENDER] 🛑 Transfer cancelled by user.`);
-      channel.send(JSON.stringify({ type: "CANCEL" }));
+      console.warn(
+        "[SENDER] 🛑 Cancel detected."
+      );
+
       return;
     }
 
-    if (channel.bufferedAmount >= MAX_BUFFER) {
-      console.log(`[SENDER] ⏳ Buffer full. Pausing...`);
-      await new Promise((resolve) => {
-        channel.onbufferedamountlow = () => {
-          channel.onbufferedamountlow = null;
-          resolve(null);
-        };
-      });
+    // ----------------------------------------------------------
+    // CHANNEL CLOSED
+    // ----------------------------------------------------------
+
+    if (
+      channel.readyState !==
+      "open"
+    ) {
+      console.warn(
+        "[SENDER] 🛑 File channel closed."
+      );
+
+      return;
     }
 
-    const slice = file.slice(offset, offset + CHUNK_SIZE);
-    const buffer = await slice.arrayBuffer();
-    
-    channel.send(buffer);
-    offset += buffer.byteLength;
-    
-    const percent = Math.round((offset / file.size) * 100);
-    
-    // 🌟 ADDED: Only trigger a React update if the integer percentage has changed!
-    if (percent !== lastReportedPercent) {
+    // ----------------------------------------------------------
+    // BACKPRESSURE
+    // ----------------------------------------------------------
+
+    if (
+      channel.bufferedAmount >=
+      MAX_BUFFER
+    ) {
+      await waitForBufferedAmount(
+        channel,
+        LOW_BUFFER
+      );
+
+      if (isCancelled()) {
+        console.warn(
+          "[SENDER] 🛑 Cancel detected while waiting."
+        );
+
+        return;
+      }
+
+      if (
+        channel.readyState !==
+        "open"
+      ) {
+        return;
+      }
+    }
+
+    // ----------------------------------------------------------
+    // READ CHUNK
+    // ----------------------------------------------------------
+
+    const end = Math.min(
+      offset + CHUNK_SIZE,
+      file.size
+    );
+
+    const buffer =
+      await file
+        .slice(offset, end)
+        .arrayBuffer();
+
+    // ----------------------------------------------------------
+    // CRITICAL CANCEL CHECK
+    // ----------------------------------------------------------
+
+    if (isCancelled()) {
+      console.warn(
+        "[SENDER] 🛑 Cancel detected before send."
+      );
+
+      return;
+    }
+
+    if (
+      channel.readyState !==
+      "open"
+    ) {
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // SEND
+    // ----------------------------------------------------------
+
+    try {
+      channel.send(buffer);
+    } catch (error) {
+      console.error(
+        "[SENDER] ❌ Failed to send chunk:",
+        error
+      );
+
+      return;
+    }
+
+    offset +=
+      buffer.byteLength;
+
+    // ----------------------------------------------------------
+    // PROGRESS
+    // ----------------------------------------------------------
+
+    const percent =
+      Math.min(
+        100,
+        Math.floor(
+          (offset /
+            file.size) *
+            100
+        )
+      );
+
+    if (
+      percent !==
+      lastReportedPercent
+    ) {
       onProgress(percent);
-      lastReportedPercent = percent;
+
+      lastReportedPercent =
+        percent;
     }
 
-    if (percent % 10 === 0 && offset === buffer.byteLength * Math.floor(offset / buffer.byteLength)) {
-      const elapsedSec = (performance.now() - startTime) / 1000;
-      const speedMBps = (offset / (1024 * 1024)) / (elapsedSec || 0.001);
-      console.log(`[SENDER] 📊 Progress: ${percent}% | Sent: ${(offset / 1024 / 1024).toFixed(2)} MB | Speed: ${speedMBps.toFixed(2)} MB/s | Buffer: ${(channel.bufferedAmount / 1024).toFixed(1)} KB`);
+    // ----------------------------------------------------------
+    // TELEMETRY
+    // ----------------------------------------------------------
+
+    if (
+      percent >= 10 &&
+      percent % 10 === 0 &&
+      percent !==
+        lastLoggedPercent
+    ) {
+      lastLoggedPercent =
+        percent;
+
+      const elapsed =
+        (performance.now() -
+          startTime) /
+        1000;
+
+      const speed =
+        (offset /
+          1024 /
+          1024) /
+        Math.max(
+          elapsed,
+          0.001
+        );
+
+      console.log(
+        `[SENDER] 📊 Progress: ${percent}% | ` +
+          `Sent: ${(
+            offset /
+            1024 /
+            1024
+          ).toFixed(2)} MB | ` +
+          `Speed: ${speed.toFixed(
+            2
+          )} MB/s | ` +
+          `Buffer: ${(
+            channel.bufferedAmount /
+            1024
+          ).toFixed(0)} KB`
+      );
     }
   }
 
-  console.log(`[SENDER] ✅ File transfer complete successfully.`);
-  channel.send(JSON.stringify({ type: "EOF" }));
+  // ============================================================
+  // WAIT FOR ALL FILE DATA TO DRAIN
+  // ============================================================
+
+  if (
+    isCancelled() ||
+    channel.readyState !==
+      "open"
+  ) {
+    return;
+  }
+
+  await waitForBufferedAmount(
+    channel,
+    0
+  );
+
+  // ------------------------------------------------------------
+  // CANCEL CHECK AFTER DRAIN
+  // ------------------------------------------------------------
+
+  if (
+    isCancelled() ||
+    channel.readyState !==
+      "open"
+  ) {
+    return;
+  }
+
+  // ============================================================
+  // EOF
+  // ============================================================
+
+  channel.send(
+    JSON.stringify({
+      type: "EOF"
+    })
+  );
+
+  const elapsed =
+    (performance.now() -
+      startTime) /
+    1000;
+
+  const speed =
+    (file.size /
+      1024 /
+      1024) /
+    Math.max(
+      elapsed,
+      0.001
+    );
+
+  console.log(
+    `[SENDER] ✅ All chunks drained. EOF sent | ` +
+      `${elapsed.toFixed(
+        2
+      )}s | ` +
+      `${speed.toFixed(
+        2
+      )} MB/s`
+  );
 }
