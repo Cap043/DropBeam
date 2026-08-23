@@ -10,7 +10,7 @@ export function useWebRTC(roomId: string, isInitiator: boolean) {
 
   useEffect(() => {
     // 1. Connect to signaling server
-    socketRef.current = io("http://localhost:3001");
+    socketRef.current = io(`http://${window.location.hostname}:3001`);
     const socket = socketRef.current;
 
     // 2. Setup WebRTC Peer Connection
