@@ -9,7 +9,9 @@ export function receiveFileChunks(
 ) {
   let bytesReceived = 0;
   let fallbackChunks: ArrayBuffer[] = [];
+  let lastReportedPercent = -1; // 🌟 ADDED: Track the last percent reported
   const startTime = performance.now();
+  
   channel.binaryType = "arraybuffer";
 
   console.log(`[RECEIVER] 📥 Ready to receive chunks. Expected size: ${(fileSize / (1024 * 1024)).toFixed(2)} MB`);
@@ -48,13 +50,19 @@ export function receiveFileChunks(
       }
 
       const percent = Math.round((bytesReceived / fileSize) * 100);
-      onProgress(percent);
 
-      // Log telemetry every 10%
-      if (percent % 10 === 0) {
-        const elapsedSec = (performance.now() - startTime) / 1000;
-        const speedMBps = (bytesReceived / (1024 * 1024)) / (elapsedSec || 0.001);
-        console.log(`[RECEIVER] 📊 Progress: ${percent}% | Received: ${(bytesReceived / 1024 / 1024).toFixed(2)} MB | Speed: ${speedMBps.toFixed(2)} MB/s`);
+      // 🌟 ADDED: Only trigger a React update and logs if the integer percentage has changed!
+      if (percent !== lastReportedPercent) {
+        onProgress(percent);
+
+        // Real-time terminal telemetry every 10%
+        if (percent % 10 === 0) {
+          const elapsedSec = (performance.now() - startTime) / 1000;
+          const speedMBps = (bytesReceived / (1024 * 1024)) / (elapsedSec || 0.001);
+          console.log(`[RECEIVER] 📊 Progress: ${percent}% | Received: ${(bytesReceived / 1024 / 1024).toFixed(2)} MB | Speed: ${speedMBps.toFixed(2)} MB/s`);
+        }
+
+        lastReportedPercent = percent;
       }
     }
   };

@@ -10,7 +10,16 @@ export default function SendPage({ params }: { params: Promise<{ roomId: string 
   const [file, setFile] = useState<File | null>(null);
   const [isWaiting, setIsWaiting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
   const cancelRef = useRef(false);
+
+  const resetSender = () => {
+    setFile(null);
+    setProgress(0);
+    setIsWaiting(false);
+    setIsComplete(false);
+    cancelRef.current = false;
+  };
 
   const handleSend = () => {
     if (!file || !channel) return;
@@ -25,7 +34,10 @@ export default function SendPage({ params }: { params: Promise<{ roomId: string 
         sendFileChunks(
           channel, 
           file, 
-          (pct) => setProgress(pct), 
+          (pct) => {
+            setProgress(pct);
+            if (pct === 100) setIsComplete(true);
+          }, 
           () => cancelRef.current
         );
       }
@@ -41,27 +53,38 @@ export default function SendPage({ params }: { params: Promise<{ roomId: string 
 
   const handleStop = () => {
     cancelRef.current = true;
-    setIsWaiting(false);
     if (channel && channel.readyState === "open") {
       channel.send(JSON.stringify({ type: "CANCEL" }));
     }
-    alert("Transfer stopped.");
+    resetSender();
   };
 
   return (
-    <div className="p-10 flex flex-col gap-4 max-w-md">
-      <h1 className="text-xl font-bold">Sender</h1>
-      <p>Room Code: <strong className="text-blue-500">{resolvedParams.roomId}</strong></p>
-      <p className="border p-2 bg-gray-100 text-black">Status: {status}</p>
+    <div className="p-10 flex flex-col gap-4 max-w-md text-black">
+      <h1 className="text-xl font-bold text-white">Sender</h1>
+      <p className="text-white">Room Code: <strong className="text-blue-400">{resolvedParams.roomId}</strong></p>
+      <p className="border p-2 bg-gray-100 rounded">Status: {status}</p>
 
       {channel && channel.readyState === "open" && (
-        <div className="border p-4 bg-blue-50 flex flex-col gap-4 text-black">
-          <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="w-full" />
-          
-          {file && progress === 0 && !isWaiting && (
-            <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded">
-              Send File
-            </button>
+        <div className="border p-4 bg-blue-50 rounded flex flex-col gap-4">
+          {!file && (
+            <input 
+              type="file" 
+              onChange={(e) => setFile(e.target.files?.[0] || null)} 
+              className="w-full" 
+            />
+          )}
+
+          {file && !isWaiting && progress === 0 && (
+            <div className="flex flex-col gap-2">
+              <p>Selected: <strong>{file.name}</strong></p>
+              <button onClick={handleSend} className="p-2 bg-blue-600 text-white rounded font-bold">
+                Send File
+              </button>
+              <button onClick={resetSender} className="p-2 bg-gray-300 text-black rounded text-sm">
+                Choose Different File
+              </button>
+            </div>
           )}
 
           {isWaiting && <p className="text-blue-700 font-semibold">Waiting for Receiver to accept...</p>}
@@ -69,8 +92,17 @@ export default function SendPage({ params }: { params: Promise<{ roomId: string 
           {progress > 0 && progress < 100 && (
             <div className="flex flex-col gap-2">
               <div>Transfer Progress: {progress}%</div>
-              <button onClick={handleStop} className="p-2 bg-red-600 text-white rounded">
+              <button onClick={handleStop} className="p-2 bg-red-600 text-white rounded font-bold">
                 Stop Transfer 🛑
+              </button>
+            </div>
+          )}
+
+          {isComplete && (
+            <div className="flex flex-col gap-2">
+              <div className="text-green-700 font-bold">Transfer Complete! 🎉</div>
+              <button onClick={resetSender} className="p-2 bg-blue-600 text-white rounded font-bold">
+                Send Another File
               </button>
             </div>
           )}
