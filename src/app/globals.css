@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  /* --- LIGHT MODE PALETTE --- */
+  --color-bone-50: rgb(244 243 240);
+  --color-bone-100: rgb(234 231 225);
+  --color-bone-200: rgb(212 208 196);
+  --color-bone-300: rgb(191 184 166);
+  --color-bone-400: rgb(169 161 137);
+  --color-bone-500: rgb(148 137 107);
+  --color-bone-600: rgb(118 110 86);
+  --color-bone-700: rgb(89 82 64);
+  --color-bone-800: rgb(59 55 43);
+  --color-bone-900: rgb(30 27 21);
+  --color-bone-950: rgb(21 19 15);
+
+  --color-frosted-mint-50: rgb(243 252 233);
+  --color-frosted-mint-100: rgb(231 248 211);
+  --color-frosted-mint-200: rgb(206 241 167);
+  --color-frosted-mint-300: rgb(182 234 123);
+  --color-frosted-mint-400: rgb(158 227 79);
+  --color-frosted-mint-500: rgb(134 221 34);
+  --color-frosted-mint-600: rgb(107 176 28);
+  --color-frosted-mint-700: rgb(80 132 21);
+  --color-frosted-mint-800: rgb(53 88 14);
+  --color-frosted-mint-900: rgb(27 44 7);
+  --color-frosted-mint-950: rgb(19 31 5);
+
+  --color-sand-dune-50: rgb(247 244 237);
+  --color-sand-dune-100: rgb(240 233 219);
+  --color-sand-dune-200: rgb(225 210 183);
+  --color-sand-dune-300: rgb(210 188 147);
+  --color-sand-dune-400: rgb(195 166 111);
+  --color-sand-dune-500: rgb(180 143 75);
+  --color-sand-dune-600: rgb(144 115 60);
+  --color-sand-dune-700: rgb(108 86 45);
+  --color-sand-dune-800: rgb(72 57 30);
+  --color-sand-dune-900: rgb(36 29 15);
+  --color-sand-dune-950: rgb(25 20 11);
+
+  --color-dusty-rose-50: rgb(246 240 239);
+  --color-dusty-rose-100: rgb(237 225 222);
+  --color-dusty-rose-200: rgb(219 195 189);
+  --color-dusty-rose-300: rgb(201 165 156);
+  --color-dusty-rose-400: rgb(183 135 123);
+  --color-dusty-rose-500: rgb(164 105 91);
+  --color-dusty-rose-600: rgb(132 84 72);
+  --color-dusty-rose-700: rgb(99 63 54);
+  --color-dusty-rose-800: rgb(66 42 36);
+  --color-dusty-rose-900: rgb(33 21 18);
+  --color-dusty-rose-950: rgb(23 15 13);
+
+  --color-wine-plum-50: rgb(247 238 239);
+  --color-wine-plum-100: rgb(238 221 223);
+  --color-wine-plum-200: rgb(221 187 191);
+  --color-wine-plum-300: rgb(205 152 159);
+  --color-wine-plum-400: rgb(188 118 128);
+  --color-wine-plum-500: rgb(171 84 96);
+  --color-wine-plum-600: rgb(137 67 77);
+  --color-wine-plum-700: rgb(103 50 57);
+  --color-wine-plum-800: rgb(68 34 38);
+  --color-wine-plum-900: rgb(34 17 19);
+  --color-wine-plum-950: rgb(24 12 13);
+
+  /* --- DARK MODE PALETTE --- */
+  --color-prussian-blue-50: #ebf0fa;
+  --color-prussian-blue-100: #d6e1f5;
+  --color-prussian-blue-200: #aec3ea;
+  --color-prussian-blue-300: #85a5e0;
+  --color-prussian-blue-400: #5d87d5;
+  --color-prussian-blue-500: #3469cb;
+  --color-prussian-blue-600: #2a54a2;
+  --color-prussian-blue-700: #1f3f7a;
+  --color-prussian-blue-800: #152a51;
+  --color-prussian-blue-900: #0a1529;
+  --color-prussian-blue-950: #070f1c;
+
+  --color-light-cyan-50: #e5fbff;
+  --color-light-cyan-100: #ccf7ff;
+  --color-light-cyan-200: #99f0ff;
+  --color-light-cyan-300: #66e8ff;
+  --color-light-cyan-400: #33e0ff;
+  --color-light-cyan-500: #00d9ff;
+  --color-light-cyan-600: #00adcc;
+  --color-light-cyan-700: #008299;
+  --color-light-cyan-800: #005766;
+  --color-light-cyan-900: #002b33;
+  --color-light-cyan-950: #001e24;
+
+  --color-baby-blue-ice-50: #e5eeff;
+  --color-baby-blue-ice-100: #ccdeff;
+  --color-baby-blue-ice-200: #99bdff;
+  --color-baby-blue-ice-300: #669cff;
+  --color-baby-blue-ice-400: #337aff;
+  --color-baby-blue-ice-500: #0059ff;
+  --color-baby-blue-ice-600: #0047cc;
+  --color-baby-blue-ice-700: #003699;
+  --color-baby-blue-ice-800: #002466;
+  --color-baby-blue-ice-900: #001233;
+  --color-baby-blue-ice-950: #000c24;
+}

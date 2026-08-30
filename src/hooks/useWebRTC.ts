@@ -73,7 +73,7 @@ export function useWebRTC(
         setChannel(fileChannel);
 
         setStatus(
-          "P2P Channel Open! 🚀"
+          "connected"
         );
       };
 
